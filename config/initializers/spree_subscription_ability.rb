@@ -1,1 +1,1 @@
-Spree::Ability.register_ability(SubscriptionAbility)
+Spree::Ability.register_ability(Spree::SubscriptionAbility)
