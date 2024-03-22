@@ -5,14 +5,14 @@ AddSubscribedFieldInCartListing = Deface::Override.new(
   partial: "spree/orders/subscription_field"
 )
 
-AddSubscribedFieldInCartListing = Deface::Override.new(
+EditSubscribedFieldInCartListing = Deface::Override.new(
   virtual_path: "spree/orders/_form",
   name: "edit_header_in_cart_listing",
   insert_bottom: "[data-hook='cart_items_headers']",
   partial: "spree/orders/cart_subscription_header"
 )
 
-AddSubscribedFieldInCartListing = Deface::Override.new(
+EditFooterdInCartListing = Deface::Override.new(
   virtual_path: "spree/orders/_form",
   name: "edit_footer_in_cart_listing",
   insert_bottom: ".cart-total",

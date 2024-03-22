@@ -1,4 +1,4 @@
-Deface::Override.new(
+AddSubscriptionsAdminTab = Deface::Override.new(
   virtual_path: 'spree/layouts/admin',
   name: 'subscriptions_admin_tab',
   insert_bottom: '#main-sidebar',
