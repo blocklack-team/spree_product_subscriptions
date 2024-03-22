@@ -1,24 +1,26 @@
-Spree::Order.class_eval do
+# app/models/spree/order_decorator.rb
 
-  has_one :order_subscription, class_name: "Spree::OrderSubscription", dependent: :destroy
-  has_one :parent_subscription, through: :order_subscription, source: :subscription
-  has_many :subscriptions, class_name: "Spree::Subscription",
-                           foreign_key: :parent_order_id,
-                           dependent: :restrict_with_error
+module Spree
+  module OrderDecorator
+    def self.prepended(base)
+      base.has_one :order_subscription, class_name: "Spree::OrderSubscription", dependent: :destroy
+      base.has_one :parent_subscription, through: :order_subscription, source: :subscription
+      base.has_many :subscriptions, class_name: "Spree::Subscription", foreign_key: :parent_order_id, dependent: :restrict_with_error
 
-  self.state_machine.after_transition to: :complete, do: :enable_subscriptions, if: :any_disabled_subscription?
+      base.state_machine.after_transition to: :complete, do: :enable_subscriptions, if: :any_disabled_subscription?
 
-  after_update :update_subscriptions
-
-  def available_payment_methods
-    if subscriptions.exists?
-      @available_payment_methods = Spree::Gateway.active.available_on_front_end
-    else
-      @available_payment_methods ||= Spree::PaymentMethod.active.available_on_front_end
+      base.after_update :update_subscriptions
     end
-  end
 
-  private
+    def available_payment_methods
+      if subscriptions.exists?
+        @available_payment_methods = Spree::Gateway.active.available_on_front_end
+      else
+        @available_payment_methods ||= Spree::PaymentMethod.active.available_on_front_end
+      end
+    end
+
+    private
 
     def enable_subscriptions
       subscriptions.each do |subscription|
@@ -42,5 +44,7 @@ Spree::Order.class_eval do
         end
       end
     end
-
+  end
 end
+
+::Spree::Order.prepend(Spree::OrderDecorator)

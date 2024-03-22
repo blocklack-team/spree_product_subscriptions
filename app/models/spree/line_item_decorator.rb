@@ -1,39 +1,42 @@
-Spree::LineItem.class_eval do
+# app/models/spree/line_item_decorator.rb
 
-  attr_accessor :subscription_frequency_id, :delivery_number, :subscribe
+module Spree
+  module LineItemDecorator
+    def self.prepended(base)
+      base.attr_accessor :subscription_frequency_id, :delivery_number, :subscribe
+      base.after_create :create_subscription!, if: :subscribable?
+      base.after_update :update_subscription_quantity, if: :can_update_subscription_quantity?
+      base.after_update :update_subscription_attributes, if: :can_update_subscription_attributes?
+      base.after_destroy :destroy_associated_subscription!, if: :subscription?
+    end
 
-  after_create :create_subscription!, if: :subscribable?
-  after_update :update_subscription_quantity, if: :can_update_subscription_quantity?
-  after_update :update_subscription_attributes, if: :can_update_subscription_attributes?
-  after_destroy :destroy_associated_subscription!, if: :subscription?
+    def subscription_attributes_present?
+      subscription_frequency_id.present? || delivery_number.present?
+    end
 
-  def subscription_attributes_present?
-    subscription_frequency_id.present? || delivery_number.present?
-  end
+    def updatable_subscription_attributes
+      {
+        subscription_frequency_id: subscription_frequency_id || subscription.subscription_frequency_id,
+        delivery_number: delivery_number || subscription.delivery_number
+      }
+    end
 
-  def updatable_subscription_attributes
-    {
-      subscription_frequency_id: subscription_frequency_id || subscription.subscription_frequency_id,
-      delivery_number: delivery_number || subscription.delivery_number
-    }
-  end
+    def subscribable?
+      subscribe.present? && subscribe != "0"
+    end
 
-  def subscribable?
-    subscribe.present? && subscribe != "0"
-  end
+    def subscription?
+      !!subscription
+    end
 
-  def subscription?
-    !!subscription
-  end
+    def subscription
+      order.subscriptions.find_by(variant: variant)
+    end
 
-  def subscription
-    order.subscriptions.find_by(variant: variant)
-  end
-
-  private
+    private
 
     def create_subscription!
-      order.subscriptions.create! subscription_attributes
+      order.subscriptions.create!(subscription_attributes)
     end
 
     def subscription_attributes
@@ -65,5 +68,8 @@ Spree::LineItem.class_eval do
     def can_update_subscription_quantity?
       subscription? && quantity_changed?
     end
-
+  end
 end
+
+::Spree::LineItem.prepend(Spree::LineItemDecorator)
+
