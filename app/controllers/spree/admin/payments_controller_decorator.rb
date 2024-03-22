@@ -1,4 +1,4 @@
-Spree::Admin::PaymentsController.class_eval do
+Spree::Admin::PaymentsControllerDecorator.class_eval do
 
   private
 
