@@ -1,15 +1,20 @@
-Spree::Admin::PaymentsControllerDecorator.class_eval do
+module Spree
+  module Admin
+    module PaymentsControllerDecorator
 
-  private
+      private
 
-    def load_data
-      @amount = params[:amount] || load_order.total
-      @payment_methods = available_payment_methods
-      @payment_method = @payment.try(:payment_method) || @payment_methods.first
+      def load_data
+        @amount = params[:amount] || load_order.total
+        @payment_methods = available_payment_methods
+        @payment_method = @payment.try(:payment_method) || @payment_methods.first
+      end
+
+      def available_payment_methods
+        @order.subscriptions.any? ? Spree::Gateway.available_on_back_end : Spree::PaymentMethod.available_on_back_end
+      end
     end
-
-    def available_payment_methods
-      @order.subscriptions.any? ? Spree::Gateway.available_on_back_end : Spree::PaymentMethod.available_on_back_end
-    end
-
+  end
 end
+
+::Spree::Admin::PaymentsController.prepend(Spree::Admin::PaymentsControllerDecorator)
