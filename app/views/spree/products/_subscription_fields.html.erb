@@ -1,4 +1,4 @@
-
+<% if @product.subscribable? %>
   <div class="subscription_options" style="display: none;">
     <br><br>
     <% subscription = Spree::Subscription.new %>
@@ -25,4 +25,4 @@
       <% end %>
     </span>
   </div>
-
+<% end %>

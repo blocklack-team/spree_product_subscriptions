@@ -12,9 +12,9 @@ module Spree
                 # Agrega aquí la lógica adicional si es necesario
 
                 line_item = spree_current_order.line_items.last
-                line_item.subscribe = params[:subscribe]
-                line_item.delivery_number = params[:delivery_number]
-                line_item.subscription_frequency_id = params[:subscription_frequency_id]
+                line_item.subscribe = 1
+                line_item.delivery_number = 1
+                line_item.subscription_frequency_id = 1
                 line_item.save!
               end
             end
