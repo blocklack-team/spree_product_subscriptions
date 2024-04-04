@@ -14,6 +14,7 @@ module Spree
       base.validates :subscription_frequencies, presence: true, if: :subscribable?
     end
 
-    ::Spree::Product.prepend self if ::Spree::Product.included_modules.exclude?(self)
   end
 end
+
+::Spree::Product.prepend(Spree::ProductDecorator)
