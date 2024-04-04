@@ -6,17 +6,18 @@ module Spree
       module Platform
         module LineItemsControllerDecorator
           def self.prepended(base)
-            base.class_eval do
-              def create
-                super # Llama al método create del controlador original
-                # Agrega aquí la lógica adicional si es necesario
+            def create
+              super # Llama al método create del controlador original
+              # Agrega aquí la lógica adicional si es necesario
 
-                line_item = spree_current_order.line_items.last
-                line_item.subscribe = 1
-                line_item.delivery_number = 1
-                line_item.subscription_frequency_id = 1
-                line_item.save!
-              end
+              p 'Line Items decorator'
+              p base
+
+              base.line_item = spree_current_order.line_items.last
+              base.line_item.subscribe = 1
+              base.line_item.delivery_number = 1
+              base.line_item.subscription_frequency_id = 1
+              base.line_item.save!
             end
           end
         end
