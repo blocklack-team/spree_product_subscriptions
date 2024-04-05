@@ -7,8 +7,14 @@ module Spree
             def add_item
               super # Llama al método create del controlador original
               # Agrega aquí la lógica adicional si es necesario
+
+              p 'Line Items decorator'
+							p 'Line Items decorator'
+							p 'Line Items decorator'
+							p 'Line Items decorator'
+							p 'Line Items decorator'
 	
-							result = add_item_service.call(
+							base.result = add_item_service.call(
 								order: spree_current_order,
 								variant: @variant,
 								quantity: add_item_params[:quantity],
@@ -17,6 +23,8 @@ module Spree
 								options: add_item_params[:options],
 								subscribe: 1
 							)
+	
+							return base.render_order(result)
             end
           end
 				end
