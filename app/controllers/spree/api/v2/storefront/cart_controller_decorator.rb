@@ -5,7 +5,7 @@ module Spree
         module CartControllerDecorator
           def self.prepended(base)
             base.class_eval do
-              def add_item_with_subscription
+              def add_item
                 p 'cart Items decorator'
                 p 'cart Items decorator'
                 p 'cart Items decorator'
@@ -26,9 +26,6 @@ module Spree
 
                 render_order(result)
               end
-
-              alias_method :add_item_without_subscription, :add_item
-              alias_method :add_item, :add_item_with_subscription
             end
           end
         end
