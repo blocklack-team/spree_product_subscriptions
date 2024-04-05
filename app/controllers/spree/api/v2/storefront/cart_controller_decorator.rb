@@ -13,8 +13,8 @@ module Spree
 							p 'Line Items decorator'
 							p 'Line Items decorator'
 							p 'Line Items decorator'
-							base.spree_authorize! :update, spree_current_order, order_token
-							base.spree_authorize! :show, @variant
+							spree_authorize! :update, spree_current_order, order_token
+							spree_authorize! :show, @variant
 	
 							result = add_item_service.call(
 								order: spree_current_order,
