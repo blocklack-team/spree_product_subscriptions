@@ -5,9 +5,6 @@ module Spree
 				module CartControllerDecorator
           def self.prepended(base)
             def add_item
-              super # Llama al método create del controlador original
-              # Agrega aquí la lógica adicional si es necesario
-	
 							result = add_item_service.call(
 								order: spree_current_order,
 								variant: @variant,
@@ -18,7 +15,7 @@ module Spree
 								subscribe: 1
 							)
 	
-							return render_order(result)
+							render_order(result)
             end
           end
 				end
