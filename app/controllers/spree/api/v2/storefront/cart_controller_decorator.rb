@@ -2,17 +2,15 @@ module Spree
   module Api
     module V2
       module Storefront
-        module CartControllerDecorator
+        class CartController < ::Spree::Api::V2::BaseController
           include OrderConcern
           include CouponCodesHelper
           include Spree::Api::V2::Storefront::MetadataControllerConcern
 
-					def self.prepended(base)
-						base.before_action :ensure_valid_metadata, only: %i[create add_item]
-						base.before_action :ensure_order, except: %i[create associate]
-						base.before_action :load_variant, only: :add_item
-						base.before_action :require_spree_current_user, only: :associate
-					end
+          before_action :ensure_valid_metadata, only: %i[create add_item]
+          before_action :ensure_order, except: %i[create associate]
+          before_action :load_variant, only: :add_item
+          before_action :require_spree_current_user, only: :associate
 
 
           def create
@@ -46,7 +44,7 @@ module Spree
 							subscribe: 1
             )
 
-						p render
+						p result
 
             render_order(result)
           end
@@ -248,5 +246,3 @@ module Spree
     end
   end
 end
-
-::Spree::Api::V2::Storefront::CartController.prepend(Spree::Api::V2::Storefront::CartControllerDecorator)
