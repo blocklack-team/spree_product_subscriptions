@@ -7,10 +7,12 @@ module Spree
           include CouponCodesHelper
           include Spree::Api::V2::Storefront::MetadataControllerConcern
 
-          before_action :ensure_valid_metadata, only: %i[create add_item]
-          before_action :ensure_order, except: %i[create associate]
-          before_action :load_variant, only: :add_item
-          before_action :require_spree_current_user, only: :associate
+					def self.prepended(base)
+						base.before_action :ensure_valid_metadata, only: %i[create add_item]
+						base.before_action :ensure_order, except: %i[create associate]
+						base.before_action :load_variant, only: :add_item
+						base.before_action :require_spree_current_user, only: :associate
+					end
 
 
           def create
