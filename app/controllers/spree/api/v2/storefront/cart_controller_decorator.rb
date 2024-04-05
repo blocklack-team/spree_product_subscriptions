@@ -5,9 +5,7 @@ module Spree
         module CartControllerDecorator
           def self.prepended(base)
             base.include InstanceMethods
-          end
 
-          module InstanceMethods
             def add_item
               spree_authorize! :update, spree_current_order, order_token
               spree_authorize! :show, @variant
