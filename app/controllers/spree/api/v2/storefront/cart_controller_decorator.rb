@@ -11,6 +11,9 @@ module Spree
                 p 'cart Items decorator'
                 p 'cart Items decorator'
                 p 'cart Items decorator'
+                
+                spree_authorize! :update, spree_current_order, order_token
+                spree_authorize! :show, @variant
 
                 result = add_item_service.call(
                   order: spree_current_order,
