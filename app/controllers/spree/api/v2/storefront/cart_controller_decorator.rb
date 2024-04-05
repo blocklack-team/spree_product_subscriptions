@@ -5,13 +5,8 @@ module Spree
 				module CartControllerDecorator
           def self.prepended(base)
             def add_item
-              p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
-							spree_authorize! :update, spree_current_order, order_token
-							spree_authorize! :show, @variant
+              super # Llama al método create del controlador original
+              # Agrega aquí la lógica adicional si es necesario
 	
 							result = add_item_service.call(
 								order: spree_current_order,
@@ -22,8 +17,6 @@ module Spree
 								options: add_item_params[:options],
 								subscribe: 1
 							)
-	
-							render_order(result)
             end
           end
 				end

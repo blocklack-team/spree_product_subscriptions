@@ -11,7 +11,10 @@ module Spree
               # Agrega aquí la lógica adicional si es necesario
 
               p 'Line Items decorator'
-              p base
+							p 'Line Items decorator'
+							p 'Line Items decorator'
+							p 'Line Items decorator'
+							p 'Line Items decorator'
 
               base.line_item = spree_current_order.line_items.last
               base.line_item.subscribe = 1
