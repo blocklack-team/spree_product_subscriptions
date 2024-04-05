@@ -22,6 +22,8 @@ module Spree
                 subscribe: 1
               )
 
+							p result
+
               render_order(result)
             end
           end
