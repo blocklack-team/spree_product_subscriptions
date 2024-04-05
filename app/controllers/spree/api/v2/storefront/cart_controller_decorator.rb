@@ -8,7 +8,7 @@ module Spree
               super # Llama al método create del controlador original
               # Agrega aquí la lógica adicional si es necesario
 	
-							base.result = add_item_service.call(
+							result = add_item_service.call(
 								order: spree_current_order,
 								variant: @variant,
 								quantity: add_item_params[:quantity],
@@ -18,7 +18,7 @@ module Spree
 								subscribe: 1
 							)
 	
-							return base.render_order(result)
+							return render_order(result)
             end
           end
 				end
