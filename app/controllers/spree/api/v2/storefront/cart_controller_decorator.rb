@@ -5,15 +5,13 @@ module Spree
         module CartControllerDecorator
           def self.prepended(base)
             base.class_eval do
-              alias_method :shipping_address, :"current_spree_user.ship_address"
-
               def add_item
                 p 'cart Items decorator'
                 p 'cart Items decorator'
                 p 'cart Items decorator'
                 p 'cart Items decorator'
                 p 'cart Items decorator'
-
+                
                 spree_authorize! :update, spree_current_order, order_token
                 spree_authorize! :show, @variant
 
