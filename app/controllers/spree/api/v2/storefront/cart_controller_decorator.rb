@@ -16,7 +16,7 @@ module Spree
 							base.spree_authorize! :update, spree_current_order, order_token
 							base.spree_authorize! :show, @variant
 	
-							base.result = add_item_service.call(
+							result = add_item_service.call(
 								order: spree_current_order,
 								variant: @variant,
 								quantity: add_item_params[:quantity],
