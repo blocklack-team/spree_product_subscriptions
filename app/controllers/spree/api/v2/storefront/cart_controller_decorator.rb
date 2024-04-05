@@ -7,12 +7,6 @@ module Spree
             def add_item
               super # Llama al método create del controlador original
               # Agrega aquí la lógica adicional si es necesario
-
-              p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
-							p 'Line Items decorator'
 	
 							base.result = add_item_service.call(
 								order: spree_current_order,

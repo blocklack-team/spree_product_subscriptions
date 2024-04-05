@@ -3,6 +3,12 @@
 module Spree
   module LineItemDecorator
     def self.prepended(base)
+      p 'Line Items Model decorator'
+      p 'Line Items Model decorator'
+      p 'Line Items Model decorator'
+      p 'Line Items Model decorator'
+      p 'Line Items Model decorator'
+
       base.attr_accessor :subscription_frequency_id, :delivery_number, :subscribe
       base.after_create :create_subscription!, if: :subscribable?
       base.after_update :update_subscription_quantity, if: :can_update_subscription_quantity?
