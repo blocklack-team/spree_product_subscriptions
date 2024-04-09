@@ -5,7 +5,32 @@ module Spree
         module CartControllerDecorator
           def self.prepended(base)
             base.class_eval do
+              def add_item
+                spree_authorize! :update, spree_current_order, order_token
+                spree_authorize! :show, @variant
 
+                result = add_item_service.call(
+                  order: spree_current_order,
+                  variant: @variant,
+                  quantity: add_item_params[:quantity],
+                  public_metadata: add_item_params[:public_metadata],
+                  private_metadata: add_item_params[:private_metadata],
+                  options: add_item_params[:options],
+                  subscribe: params[:subscribe],
+                  delivery_number: params[:delivery_number],
+                  subscription_frequency_id: params[:subscription_frequency_id]
+                )
+
+                if params[:subscribe].present? && params[:subscribe] == true
+                  line_item = spree_current_order.line_items.last
+                  line_item[:subscribe] = params[:subscribe]
+                  line_item[:delivery_number] = params[:delivery_number]
+                  line_item[:subscription_frequency_id] = params[:subscription_frequency_id]
+                  line_item.save
+                end
+
+                render_order(result)
+              end
             end
           end
         end
