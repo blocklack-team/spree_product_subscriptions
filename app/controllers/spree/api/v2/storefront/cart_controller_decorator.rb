@@ -21,14 +21,6 @@ module Spree
                   subscription_frequency_id: params[:subscription_frequency_id]
                 )
 
-                if params[:subscribe].present? && params[:subscribe] == true
-                  line_item = spree_current_order.line_items.last
-                  line_item[:subscribe] = params[:subscribe]
-                  line_item[:delivery_number] = params[:delivery_number]
-                  line_item[:subscription_frequency_id] = params[:subscription_frequency_id]
-                  line_item.save
-                end
-
                 render_order(result)
               end
             end
