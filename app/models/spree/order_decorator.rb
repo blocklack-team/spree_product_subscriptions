@@ -40,10 +40,15 @@ module Spree
     def update_subscriptions
       line_items.each do |line_item|
         if line_item.subscription_attributes_present?
-          subscriptions.find_by(variant: line_item.variant).update(line_item.updatable_subscription_attributes)
+          subscription = subscriptions.find_by(variant: line_item.variant)
+          if subscription
+            subscription.update(line_item.updatable_subscription_attributes)
+          else
+            Rails.logger.warn("Subscription not found for variant #{line_item.variant.id}")
+          end
         end
       end
-    end
+    end    
   end
 end
 
