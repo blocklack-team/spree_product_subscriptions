@@ -189,9 +189,10 @@ module Spree
       end
 
       def add_variant_to_order(order)
-        order.add(variant, quantity)
+        Spree::Cart::AddItem.call(order: order, variant: variant, quantity: quantity)
         order.next
       end
+      
 
       def add_shipping_address(order)
         order.ship_address = ship_address.clone
