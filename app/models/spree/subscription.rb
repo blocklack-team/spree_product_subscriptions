@@ -189,7 +189,7 @@ module Spree
       end
 
       def add_variant_to_order(order)
-        order.contents.add(variant, quantity)
+        order.add(variant, quantity)
         order.next
       end
 
