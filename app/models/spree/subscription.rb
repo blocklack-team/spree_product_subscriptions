@@ -134,7 +134,7 @@ module Spree
 
       def update_price
         if valid_variant?
-          self.price = variant.price
+          self.price = variant.prices.find_by(variant_id: variant.id).amount
         else
           self.errors.add(:variant_id, :does_not_belong_to_product)
         end
