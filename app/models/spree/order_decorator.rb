@@ -23,20 +23,14 @@ module Spree
     private
 
     def enable_subscriptions
-      p '#estoy actualizando o creando la subscription'
-      p '#estoy actualizando o creando la subscription'
-      p '#estoy actualizando o creando la subscription'
       subscriptions.each do |subscription|
         subscription.update(
           source: payments.from_credit_card.first.source,
           enabled: true,
-          ship_address: user.present? ? user.ship_address.try(:clone) : ship_address.clone,
-          bill_address: user.present? ? user.bill_address.try(:clone) : bill_address.clone
+          ship_address: ship_address.clone,
+          bill_address: bill_address.clone
         )
       end
-      p '#Finish actualizando o creando la subscription'
-      p '#Finish actualizando o creando la subscription'
-      p '#Finish actualizando o creando la subscription'
     end
 
     def any_disabled_subscription?
