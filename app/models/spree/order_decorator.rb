@@ -40,6 +40,7 @@ module Spree
     end
 
     def any_disabled_subscription?
+      p subscriptions.disabled
       subscriptions.disabled.any?
     end
 
