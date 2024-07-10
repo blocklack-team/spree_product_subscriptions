@@ -1,15 +1,17 @@
 module Spree
   class Subscription < Spree::Base
 
+    DISCOUNT_CODE = "6146040e" # Define tu código de descuento aquí
+
     attr_accessor :cancelled
 
     include Spree::Core::NumberGenerator.new(prefix: 'S')
 
     ACTION_REPRESENTATIONS = {
-                               pause: "Pause",
-                               unpause: "Activate",
-                               cancel: "Cancel"
-                             }
+      pause: "Pause",
+      unpause: "Activate",
+      cancel: "Cancel"
+    }
 
     USER_DEFAULT_CANCELLATION_REASON = "Cancelled By User"
 
@@ -76,8 +78,15 @@ module Spree
       else
         update_column(:next_occurrence_possible, false)
       end
-      new_order = recreate_order if (deliveries_remaining? && next_occurrence_possible)
-      update(next_occurrence_at: next_occurrence_at_value) if new_order.try :completed?
+
+      if deliveries_remaining? && next_occurrence_possible
+        grouped_subscriptions = group_subscriptions_by_customer_and_date
+        grouped_subscriptions.each do |customer_id, subscriptions|
+          create_combined_order(subscriptions)
+        end
+      end
+
+      update(next_occurrence_at: next_occurrence_at_value) if deliveries_remaining?
     end
 
     def cancel_with_reason(attributes)
@@ -128,187 +137,181 @@ module Spree
 
     private
 
-      def eligible_for_prior_notification?
-        (next_occurrence_at.to_date - Time.current.to_date).round == prior_notification_days_gap
+    def group_subscriptions_by_customer_and_date
+      self.class.eligible_for_subscription.group_by { |sub| [sub.parent_order.user_id, sub.next_occurrence_at.to_date] }
+    end
+
+    def create_combined_order(subscriptions)
+      customer = subscriptions.first.parent_order.user
+      new_order = orders.create(order_attributes(customer))
+
+      subscriptions.each do |subscription|
+        add_variant_to_order(new_order, subscription)
       end
 
-      def update_price
-        if valid_variant?
-          self.price = variant.prices.find_by(variant_id: variant.id).amount
-        else
-          self.errors.add(:variant_id, :does_not_belong_to_product)
+      add_shipping_address(new_order, subscriptions.first)
+      add_delivery_method_to_order(new_order, subscriptions.first)
+      add_shipping_costs_to_order(new_order)
+      add_payment_method_to_order(new_order, subscriptions.first)
+      apply_discount_code(new_order)
+      confirm_order(new_order)
+    end
+
+    def add_variant_to_order(order, subscription)
+      Spree::Cart::AddItem.call(order: order, variant: subscription.variant, quantity: subscription.quantity)
+      order.next
+    end
+
+    def add_shipping_address(order, subscription)
+      order.ship_address = subscription.ship_address.clone
+      order.bill_address = subscription.bill_address.clone
+      order.next
+    end
+
+    def add_delivery_method_to_order(order, subscription)
+      selected_shipping_method_id = subscription.parent_order.inventory_units.where(variant_id: subscription.variant.id).first.shipment.shipping_method.id
+
+      order.shipments.each do |shipment|
+        current_shipping_rate = shipment.shipping_rates.find_by(selected: true)
+        proposed_shipping_rate = shipment.shipping_rates.find_by(shipping_method_id: selected_shipping_method_id)
+
+        if proposed_shipping_rate.present? && current_shipping_rate != proposed_shipping_rate
+          current_shipping_rate.update(selected: false)
+          proposed_shipping_rate.update(selected: true)
         end
       end
 
-      def valid_variant?
-        variant_was = Spree::Variant.find_by(id: variant_id_was)
-        variant.present? && variant_was.try(:product_id) == variant.product_id
+      order.next
+    end
+
+    def add_shipping_costs_to_order(order)
+      order.set_shipments_cost
+    end
+
+    def add_payment_method_to_order(order, subscription)
+      if order.payments.exists?
+        order.payments.first.update(source: subscription.source, payment_method: subscription.source.payment_method)
+      else
+        order.payments.create(source: subscription.source, payment_method: subscription.source.payment_method, amount: order.total)
       end
+      order.next
+    end
 
-      def set_cancelled_at
-        self.cancelled_at = Time.current
+    def apply_discount_code(order)
+      promotion = Spree::Promotion.find_by(code: DISCOUNT_CODE)
+      return unless promotion.present?
+
+      promotion_handler = Spree::PromotionHandler::Coupon.new(order: order, coupon_code: DISCOUNT_CODE)
+      promotion_handler.apply
+    end
+
+    def confirm_order(order)
+      order.next
+    end
+
+    def order_attributes(customer)
+      {
+        currency: parent_order.currency,
+        token: parent_order.token,
+        store: parent_order.store,
+        user: customer,
+        created_by: parent_order.user,
+        last_ip_address: parent_order.last_ip_address
+      }
+    end
+
+    def notify_user
+      SubscriptionNotifier.notify_confirmation(self).deliver_later
+    end
+
+    def not_cancelled?
+      !cancelled?
+    end
+
+    def can_set_cancelled_at?
+      cancelled.present? && deliveries_remaining?
+    end
+
+    def set_cancelled_at
+      self.cancelled_at = Time.current
+    end
+
+    def set_next_occurrence_at
+      self.next_occurrence_at = next_occurrence_at_value
+    end
+
+    def next_occurrence_at_value
+      deliveries_remaining? ? Time.current + frequency.months_count.month : next_occurrence_at
+    end
+
+    def can_set_next_occurrence_at?
+      enabled? && next_occurrence_at.nil? && deliveries_remaining?
+    end
+
+    def set_next_occurrence_at_after_unpause
+      self.next_occurrence_at = (Time.current > next_occurrence_at) ? next_occurrence_at + frequency.months_count.month : next_occurrence_at
+    end
+
+    def can_pause?
+      enabled? && !cancelled? && deliveries_remaining? && !paused?
+    end
+
+    def can_unpause?
+      enabled? && !cancelled? && deliveries_remaining? && paused?
+    end
+
+    def set_cancellation_reason
+      self.cancellation_reasons = USER_DEFAULT_CANCELLATION_REASON
+    end
+
+    def can_set_cancellation_reason?
+      cancelled.present? && deliveries_remaining? && cancellation_reasons.nil?
+    end
+
+    def notify_cancellation
+      SubscriptionNotifier.notify_cancellation(self).deliver_later
+    end
+
+    def cancellation_notifiable?
+      cancelled_at.present? && cancelled_at_changed?
+    end
+
+    def reoccurrence_notifiable?
+      next_occurrence_at_changed? && !!next_occurrence_at_was
+    end
+
+    def notify_reoccurrence
+      SubscriptionNotifier.notify_reoccurrence(self).deliver_later
+    end
+
+    def recurring_orders_size
+      complete_orders.size + 1
+    end
+
+    def user_notifiable?
+      enabled? && enabled_changed?
+    end
+
+    def next_occurrence_at_not_changed?
+      !next_occurrence_at_changed?
+    end
+
+    def next_occurrence_at_range
+      unless next_occurrence_at >= Time.current.to_date
+        errors.add(:next_occurrence_at, Spree.t('subscriptions.error.out_of_range'))
       end
+    end
 
-      def set_next_occurrence_at
-        self.next_occurrence_at = next_occurrence_at_value
+    def update_next_occurrence_at
+      update_column(:next_occurrence_at, next_occurrence_at_value)
+    end
+
+    def prior_notification_days_gap_value
+      return if next_occurrence_at_value.nil?
+
+      if Time.current + prior_notification_days_gap.days >= next_occurrence_at_value
+        errors.add(:prior_notification_days_gap, Spree.t('subscriptions.error.should_be_earlier_than_next_delivery'))
       end
-
-      def next_occurrence_at_value
-        deliveries_remaining? ? Time.current + frequency.months_count.month : next_occurrence_at
-      end
-
-      def can_set_next_occurrence_at?
-        enabled? && next_occurrence_at.nil? && deliveries_remaining?
-      end
-
-      def set_next_occurrence_at_after_unpause
-        self.next_occurrence_at = (Time.current > next_occurrence_at) ? next_occurrence_at + frequency.months_count.month : next_occurrence_at
-      end
-
-      def can_pause?
-        enabled? && !cancelled? && deliveries_remaining? && !paused?
-      end
-
-      def can_unpause?
-        enabled? && !cancelled? && deliveries_remaining? && paused?
-      end
-
-      def recreate_order
-        order = make_new_order
-        add_variant_to_order(order)
-        add_shipping_address(order)
-        add_delivery_method_to_order(order)
-        add_shipping_costs_to_order(order)
-        add_payment_method_to_order(order)
-        confirm_order(order)
-        order
-      end
-
-      def make_new_order
-        orders.create(order_attributes)
-      end
-
-      def add_variant_to_order(order)
-        Spree::Cart::AddItem.call(order: order, variant: variant, quantity: quantity)
-        order.next
-      end
-      
-
-      def add_shipping_address(order)
-        order.ship_address = ship_address.clone
-        order.bill_address = bill_address.clone
-        order.next
-      end
-
-      # select shipping method which was selected in original order.
-      def add_delivery_method_to_order(order)
-        selected_shipping_method_id = parent_order.inventory_units.where(variant_id: variant.id).first.shipment.shipping_method.id
-
-        order.shipments.each do |shipment|
-          current_shipping_rate = shipment.shipping_rates.find_by(selected: true)
-          proposed_shipping_rate = shipment.shipping_rates.find_by(shipping_method_id: selected_shipping_method_id)
-
-          if proposed_shipping_rate.present? && current_shipping_rate != proposed_shipping_rate
-            current_shipping_rate.update(selected: false)
-            proposed_shipping_rate.update(selected: true)
-          end
-        end
-
-        order.next
-      end
-
-      def add_shipping_costs_to_order(order)
-        order.set_shipments_cost
-      end
-
-      def add_payment_method_to_order(order)
-        if order.payments.exists?
-          order.payments.first.update(source: source, payment_method: source.payment_method)
-        else
-          order.payments.create(source: source, payment_method: source.payment_method, amount: order.total)
-        end
-        order.next
-      end
-
-      def confirm_order(order)
-        order.next
-      end
-
-      def order_attributes
-        {
-          currency: parent_order.currency,
-          token: parent_order.token,
-          store: parent_order.store,
-          user: parent_order.user,
-          created_by: parent_order.user,
-          last_ip_address: parent_order.last_ip_address
-        }
-      end
-
-      def notify_user
-        SubscriptionNotifier.notify_confirmation(self).deliver_later
-      end
-
-      def not_cancelled?
-        !cancelled?
-      end
-
-      def can_set_cancelled_at?
-        cancelled.present? && deliveries_remaining?
-      end
-
-      def set_cancellation_reason
-        self.cancellation_reasons = USER_DEFAULT_CANCELLATION_REASON
-      end
-
-      def can_set_cancellation_reason?
-        cancelled.present? && deliveries_remaining? && cancellation_reasons.nil?
-      end
-
-      def notify_cancellation
-        SubscriptionNotifier.notify_cancellation(self).deliver_later
-      end
-
-      def cancellation_notifiable?
-        cancelled_at.present? && cancelled_at_changed?
-      end
-
-      def reoccurrence_notifiable?
-        next_occurrence_at_changed? && !!next_occurrence_at_was
-      end
-
-      def notify_reoccurrence
-        SubscriptionNotifier.notify_reoccurrence(self).deliver_later
-      end
-
-      def recurring_orders_size
-        complete_orders.size + 1
-      end
-
-      def user_notifiable?
-        enabled? && enabled_changed?
-      end
-
-      def next_occurrence_at_not_changed?
-        !next_occurrence_at_changed?
-      end
-
-      def next_occurrence_at_range
-        unless next_occurrence_at >= Time.current.to_date
-          errors.add(:next_occurrence_at, Spree.t('subscriptions.error.out_of_range'))
-        end
-      end
-
-      def update_next_occurrence_at
-        update_column(:next_occurrence_at, next_occurrence_at_value)
-      end
-
-      def prior_notification_days_gap_value
-        return if next_occurrence_at_value.nil?
-
-        if Time.current + prior_notification_days_gap.days >= next_occurrence_at_value
-          errors.add(:prior_notification_days_gap, Spree.t('subscriptions.error.should_be_earlier_than_next_delivery'))
-        end
-      end
+    end
   end
 end
