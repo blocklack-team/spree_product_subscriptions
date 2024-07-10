@@ -199,10 +199,19 @@ module Spree
 
     def apply_discount_code(order)
       promotion = Spree::Promotion.find_by(code: DISCOUNT_CODE)
-      return unless promotion.present?
-
-      promotion_handler = Spree::PromotionHandler::Coupon.new(order: order, coupon_code: DISCOUNT_CODE)
-      promotion_handler.apply
+      
+      if promotion.present?
+        promotion_handler = Spree::PromotionHandler::Coupon.new(order)
+        promotion_handler.apply_coupon_code(DISCOUNT_CODE)
+        
+        if promotion_handler.successful?
+          Rails.logger.info "Discount code #{DISCOUNT_CODE} applied successfully to order #{order.number}"
+        else
+          Rails.logger.error "Failed to apply discount code #{DISCOUNT_CODE} to order #{order.number}: #{promotion_handler.error}"
+        end
+      else
+        Rails.logger.error "Discount code #{DISCOUNT_CODE} not found"
+      end
     end
 
     def confirm_order(order)
