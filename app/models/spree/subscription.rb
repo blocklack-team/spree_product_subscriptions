@@ -144,20 +144,25 @@ module Spree
         customer = subscriptions.first.parent_order.user || subscriptions.first.parent_order.email
 
         order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
+        is_new = false
 
         if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
           new_order = order.last.order
         else
           new_order = orders.create(order_attributes(customer))
+          is_new = true
         end
       
-        add_variant_to_order(new_order, subscriptions.first)
+        if is_new
+          add_variant_to_order(new_order, subscriptions.first)
+          apply_discount_code(new_order)
+          apply_free_shipping(new_order, subscriptions.first)
+        end
+        
         add_shipping_address(new_order, subscriptions.first)
         add_delivery_method_to_order(new_order, subscriptions.first)
         add_shipping_costs_to_order(new_order)
         add_payment_method_to_order(new_order, subscriptions.first)
-        apply_discount_code(new_order)
-        apply_free_shipping(new_order, subscriptions.first)
         confirm_order(new_order)
       end
     end    
