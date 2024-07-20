@@ -137,34 +137,28 @@ module Spree
     private
 
     def group_subscriptions_by_customer_and_date
-      self.class.eligible_for_subscription.group_by { |sub| [sub.parent_order.user_id, sub.next_occurrence_at.to_date] }
+      self.class.eligible_for_subscription.where(order_combined: false).group_by { |sub| [sub.parent_order.user_id, sub.next_occurrence_at.to_date] }
     end
+    
 
     def create_combined_order(subscriptions)
-      # Verificar si ya existe una orden combinada para estas suscripciones
-      combined_order = subscriptions.first.orders.find_by(user: subscriptions.first.parent_order.user, state: 'cart')
-
-      if combined_order.nil?
-        # Crear una nueva orden combinada si no existe
-        customer = subscriptions.first.parent_order.user
-        combined_order = orders.create(order_attributes(customer))
-      end
-
+      customer = subscriptions.first.parent_order.user
+      new_order = orders.create(order_attributes(customer))
+    
       subscriptions.each do |subscription|
-        # Verificar si la suscripción ya está asignada a una orden combinada
-        unless subscription.orders.include?(combined_order)
-          add_variant_to_order(combined_order, subscription)
-          subscription.orders_subscriptions.create(order: combined_order)
-        end
+        next if subscription.order_combined  # Skip if already combined
+    
+        add_variant_to_order(new_order, subscription)
+        subscription.update(order_combined: true)  # Mark as combined
       end
-
-      add_shipping_address(combined_order, subscriptions.first)
-      add_delivery_method_to_order(combined_order, subscriptions.first)
-      add_shipping_costs_to_order(combined_order)
-      add_payment_method_to_order(combined_order, subscriptions.first)
-      apply_discount_code(combined_order)
-      confirm_order(combined_order)
-    end
+    
+      add_shipping_address(new_order, subscriptions.first)
+      add_delivery_method_to_order(new_order, subscriptions.first)
+      add_shipping_costs_to_order(new_order)
+      add_payment_method_to_order(new_order, subscriptions.first)
+      apply_discount_code(new_order)
+      confirm_order(new_order)
+    end    
 
     def add_variant_to_order(order, subscription)
       Spree::Cart::AddItem.call(order: order, variant: subscription.variant, quantity: subscription.quantity)
