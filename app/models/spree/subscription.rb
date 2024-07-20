@@ -146,8 +146,13 @@ module Spree
         order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
         is_new = false
 
-        if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
-          new_order = order.last.order
+        if order.count > 0
+          if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
+            new_order = order.last.order
+          else
+            new_order = orders.create(order_attributes(customer))
+            is_new = true
+          end
         else
           new_order = orders.create(order_attributes(customer))
           is_new = true
