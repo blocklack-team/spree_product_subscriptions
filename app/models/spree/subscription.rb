@@ -206,7 +206,7 @@ module Spree
         promotion_handler = Spree::PromotionHandler::Coupon.new(order)
         result = promotion_handler.apply
         
-        if result.success?
+        if result.success
           Rails.logger.info "Discount code #{DISCOUNT_CODE} applied successfully to order #{order.number}"
         else
           Rails.logger.error "Failed to apply discount code #{DISCOUNT_CODE} to order #{order.number}: #{promotion_handler.error}"
