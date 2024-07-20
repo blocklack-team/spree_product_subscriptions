@@ -142,7 +142,14 @@ module Spree
     def create_combined_order(subscriptions)
       if !subscriptions.first.order_combined
         customer = subscriptions.first.parent_order.user || subscriptions.first.parent_order.email
-        new_order = orders.create(order_attributes(customer))
+
+        order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
+
+        if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
+          new_order = order.last.order
+        else
+          new_order = orders.create(order_attributes(customer))
+        end
       
         add_variant_to_order(new_order, subscriptions.first)
         add_shipping_address(new_order, subscriptions.first)
