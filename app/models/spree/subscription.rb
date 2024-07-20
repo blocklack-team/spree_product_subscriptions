@@ -79,10 +79,8 @@ module Spree
       end
 
       if deliveries_remaining? && next_occurrence_possible
-        grouped_subscriptions = group_subscriptions_by_customer_and_date
-        grouped_subscriptions.each do |customer_id, subscriptions|
-          create_combined_order(subscriptions)
-        end
+        subscription = self.class.eligible_for_subscription
+        create_combined_order(subscription)
       end
 
       update(next_occurrence_at: next_occurrence_at_value) if deliveries_remaining?
@@ -147,10 +145,7 @@ module Spree
         new_order = orders.create(order_attributes(customer))
       
         subscriptions.each do |subscription|
-          next if subscription.order_combined  # Skip if already combined
-      
           add_variant_to_order(new_order, subscription)
-          subscription.update(order_combined: true)  # Mark as combined
         end
       
         add_shipping_address(new_order, subscriptions.first)
@@ -158,6 +153,7 @@ module Spree
         add_shipping_costs_to_order(new_order)
         add_payment_method_to_order(new_order, subscriptions.first)
         apply_discount_code(new_order)
+        apply_free_shipping(new_order, subscriptions.first)
         confirm_order(new_order)
       end
     end    
@@ -221,6 +217,24 @@ module Spree
         order.updater.update
       else
         Rails.logger.error "Discount code #{DISCOUNT_CODE} not found"
+      end
+    end
+
+    def apply_free_shipping(order, subscription)
+      order_subscriptions = Spree::Subscription.where(parent_order_id: subscription.parent_order_id)
+
+      total_price = order_subscriptions.sum(:price)
+
+      if total_price.to_f < 125 && subscription.variant_id == order_subscriptions.first.variant_id
+        adjustment = Spree::Adjustment.create!(
+          adjustable: order,
+          amount: 8.95,
+          label: "FLAT RATE SHIPPING",
+          order: order,
+          included: false
+        )
+
+        order.updater.update
       end
     end
 
