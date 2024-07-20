@@ -141,7 +141,8 @@ module Spree
 
     def create_combined_order(subscriptions)
       if !subscriptions.first.order_combined
-        customer = subscriptions.first.parent_order.user || subscriptions.first.parent_order.email
+        customer = subscriptions.first.parent_order.user
+        email = subscriptions.first.parent_order.email
 
         order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
         is_new = false
@@ -163,6 +164,10 @@ module Spree
           apply_discount_code(new_order)
           apply_free_shipping(new_order, subscriptions.first)
         end
+
+        if customer.nil?
+          add_email_to_order(new_order, email)
+        end
         
         add_shipping_address(new_order, subscriptions.first)
         add_delivery_method_to_order(new_order, subscriptions.first)
@@ -174,6 +179,11 @@ module Spree
 
     def add_variant_to_order(order, subscription)
       Spree::Cart::AddItem.call(order: order, variant: subscription.variant, quantity: subscription.quantity)
+      order.next
+    end
+
+    def add_email_to_order(order, email)
+      order.email = email
       order.next
     end
 
