@@ -134,47 +134,40 @@ module Spree
 
     private
 
-    def group_subscriptions_by_customer_and_date
-      self.class.eligible_for_subscription.where(order_combined: false).group_by { |sub| [sub.parent_order.user_id, sub.next_occurrence_at.to_date] }
-    end
-    
-
     def create_combined_order(subscriptions)
-      if !subscriptions.first.order_combined
-        customer = subscriptions.first.parent_order.user
-        email = subscriptions.first.parent_order.email
+      customer = subscriptions.first.parent_order.user
+      email = subscriptions.first.parent_order.email
 
-        order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
-        is_new = false
+      order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
+      is_new = false
 
-        if order.count > 0
-          if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
-            new_order = order.last.order
-          else
-            new_order = orders.create(order_attributes(customer))
-            is_new = true
-          end
+      if order.count > 0
+        if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
+          new_order = order.last.order
         else
           new_order = orders.create(order_attributes(customer))
           is_new = true
         end
-      
-        if is_new
-          add_variant_to_order(new_order, subscriptions.first)
-          apply_discount_code(new_order)
-          apply_free_shipping(new_order, subscriptions.first)
-        end
-
-        if customer.nil?
-          add_email_to_order(new_order, email)
-        end
-        
-        add_shipping_address(new_order, subscriptions.first)
-        add_delivery_method_to_order(new_order, subscriptions.first)
-        add_shipping_costs_to_order(new_order)
-        add_payment_method_to_order(new_order, subscriptions.first)
-        confirm_order(new_order)
+      else
+        new_order = orders.create(order_attributes(customer))
+        is_new = true
       end
+    
+      if is_new
+        add_variant_to_order(new_order, subscriptions.first)
+        apply_discount_code(new_order)
+        apply_free_shipping(new_order, subscriptions.first)
+      end
+
+      if customer.nil?
+        add_email_to_order(new_order, email)
+      end
+      
+      add_shipping_address(new_order, subscriptions.first)
+      add_delivery_method_to_order(new_order, subscriptions.first)
+      add_shipping_costs_to_order(new_order)
+      add_payment_method_to_order(new_order, subscriptions.first)
+      confirm_order(new_order)
     end    
 
     def add_variant_to_order(order, subscription)
