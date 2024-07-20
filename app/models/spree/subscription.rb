@@ -142,22 +142,24 @@ module Spree
     
 
     def create_combined_order(subscriptions)
-      customer = subscriptions.first.parent_order.user
-      new_order = orders.create(order_attributes(customer))
-    
-      subscriptions.each do |subscription|
-        next if subscription.order_combined  # Skip if already combined
-    
-        add_variant_to_order(new_order, subscription)
-        subscription.update(order_combined: true)  # Mark as combined
+      if !subscriptions.first.order_combined
+        customer = subscriptions.first.parent_order.user
+        new_order = orders.create(order_attributes(customer))
+      
+        subscriptions.each do |subscription|
+          next if subscription.order_combined  # Skip if already combined
+      
+          add_variant_to_order(new_order, subscription)
+          subscription.update(order_combined: true)  # Mark as combined
+        end
+      
+        add_shipping_address(new_order, subscriptions.first)
+        add_delivery_method_to_order(new_order, subscriptions.first)
+        add_shipping_costs_to_order(new_order)
+        add_payment_method_to_order(new_order, subscriptions.first)
+        apply_discount_code(new_order)
+        confirm_order(new_order)
       end
-    
-      add_shipping_address(new_order, subscriptions.first)
-      add_delivery_method_to_order(new_order, subscriptions.first)
-      add_shipping_costs_to_order(new_order)
-      add_payment_method_to_order(new_order, subscriptions.first)
-      apply_discount_code(new_order)
-      confirm_order(new_order)
     end    
 
     def add_variant_to_order(order, subscription)
