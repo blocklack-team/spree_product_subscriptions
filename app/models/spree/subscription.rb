@@ -1,8 +1,7 @@
 module Spree
   class Subscription < Spree::Base
 
-    DISCOUNT_CODE = "6146040e" # Define tu código de descuento aquí
-
+    DISCOUNT_CODE = "6146040e"
     attr_accessor :cancelled
 
     include Spree::Core::NumberGenerator.new(prefix: 'S')
@@ -142,19 +141,29 @@ module Spree
     end
 
     def create_combined_order(subscriptions)
-      customer = subscriptions.first.parent_order.user
-      new_order = orders.create(order_attributes(customer))
+      # Verificar si ya existe una orden combinada para estas suscripciones
+      combined_order = subscriptions.first.orders.find_by(user: subscriptions.first.parent_order.user, state: 'cart')
 
-      subscriptions.each do |subscription|
-        add_variant_to_order(new_order, subscription)
+      if combined_order.nil?
+        # Crear una nueva orden combinada si no existe
+        customer = subscriptions.first.parent_order.user
+        combined_order = orders.create(order_attributes(customer))
       end
 
-      add_shipping_address(new_order, subscriptions.first)
-      add_delivery_method_to_order(new_order, subscriptions.first)
-      add_shipping_costs_to_order(new_order)
-      add_payment_method_to_order(new_order, subscriptions.first)
-      apply_discount_code(new_order)
-      confirm_order(new_order)
+      subscriptions.each do |subscription|
+        # Verificar si la suscripción ya está asignada a una orden combinada
+        unless subscription.orders.include?(combined_order)
+          add_variant_to_order(combined_order, subscription)
+          subscription.orders_subscriptions.create(order: combined_order)
+        end
+      end
+
+      add_shipping_address(combined_order, subscriptions.first)
+      add_delivery_method_to_order(combined_order, subscriptions.first)
+      add_shipping_costs_to_order(combined_order)
+      add_payment_method_to_order(combined_order, subscriptions.first)
+      apply_discount_code(combined_order)
+      confirm_order(combined_order)
     end
 
     def add_variant_to_order(order, subscription)
