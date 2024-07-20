@@ -201,10 +201,10 @@ module Spree
       promotion = Spree::Promotion.find_by(code: DISCOUNT_CODE)
       
       if promotion.present?
-        promotion_handler = Spree::PromotionHandler::Coupon.new(order)
-        promotion_handler.apply(DISCOUNT_CODE)
+        promotion_handler = Spree::PromotionHandler::Coupon.new(order: order, coupon_code: DISCOUNT_CODE)
+        result = promotion_handler.apply
         
-        if promotion_handler.successful?
+        if result.success?
           Rails.logger.info "Discount code #{DISCOUNT_CODE} applied successfully to order #{order.number}"
         else
           Rails.logger.error "Failed to apply discount code #{DISCOUNT_CODE} to order #{order.number}: #{promotion_handler.error}"
