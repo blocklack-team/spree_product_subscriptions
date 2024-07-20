@@ -141,7 +141,7 @@ module Spree
 
     def create_combined_order(subscriptions)
       if !subscriptions.first.order_combined
-        customer = subscriptions.first.parent_order.user
+        customer = subscriptions.first.parent_order.user || subscriptions.first.parent_order.email
         new_order = orders.create(order_attributes(customer))
       
         add_variant_to_order(new_order, subscriptions.first)
