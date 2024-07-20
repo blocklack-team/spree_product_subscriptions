@@ -144,7 +144,7 @@ module Spree
         customer = subscriptions.first.parent_order.user
         new_order = orders.create(order_attributes(customer))
       
-        add_variant_to_order(new_order, subscription.first)
+        add_variant_to_order(new_order, subscriptions.first)
         add_shipping_address(new_order, subscriptions.first)
         add_delivery_method_to_order(new_order, subscriptions.first)
         add_shipping_costs_to_order(new_order)
