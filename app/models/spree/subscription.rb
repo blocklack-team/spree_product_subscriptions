@@ -243,16 +243,39 @@ module Spree
       total_price = order_subscriptions.sum(:price)
 
       if total_price.to_f < 125 && subscription.variant_id == order_subscriptions.first.variant_id
-        adjustment = Spree::Adjustment.create!(
-          adjustable: order,
-          amount: 8.95,
-          label: "FLAT RATE SHIPPING",
-          order: order,
-          included: false
-        )
+
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'flat_rate_shipping'
+          new_adjustment(order, 'FLAT RATE SHIPPING', 8.95)
+        end
+
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'expedited_shipping'
+          new_adjustment(order, '****EXPEDITED SHIPPING****', 19.95)
+        end
+
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'dhl_international_global'
+          new_adjustment(order, 'DHL INTERNATIONAL GLOBAL', 53.95)
+        end
+
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'international_canada_mexico'
+          new_adjustment(order, 'DHL EXPRESS INTERNATIONAL CANADA/MEXICO', 32.95)
+        end
+
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'alaska_hawaii_shipping'
+          new_adjustment(order, 'Alaska - Hawaii Shipping (AH12X)', 19.95)
+        end
 
         order.updater.update
       end
+    end
+
+    def new_adjustment(order, name, value)
+      adjustment = Spree::Adjustment.create!(
+        adjustable: order,
+        amount: value,
+        label: name,
+        order: order,
+        included: false
+      )
     end
 
     def confirm_order(order)
