@@ -248,6 +248,10 @@ module Spree
           new_adjustment(order, 'FLAT RATE SHIPPING', 8.95)
         end
 
+        if subscription.parent_order.shipments[0].shipping_method.admin_name == 'free_shipping'
+          new_adjustment(order, 'FLAT RATE SHIPPING', 8.95)
+        end
+
         if subscription.parent_order.shipments[0].shipping_method.admin_name == 'expedited_shipping'
           new_adjustment(order, '****EXPEDITED SHIPPING****', 19.95)
         end
