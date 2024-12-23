@@ -96,7 +96,8 @@ module Spree
     end
 
     def number_of_deliveries_left
-      delivery_number.to_i - complete_orders.size - 1
+      #delivery_number.to_i - complete_orders.size - 1
+      delivery_number.to_i
     end
 
     def pause
@@ -187,17 +188,6 @@ module Spree
     end
 
     def add_delivery_method_to_order(order, subscription)
-      p 'Delivery order'
-      p 'Delivery order'
-      p order
-      p 'End Delivery order'
-      p 'End Delivery order'
-
-      p 'subscription order'
-      p 'subscription order'
-      p subscription
-      p 'End subscription order'
-      p 'End subscription order'
       selected_shipping_method_id = subscription.parent_order.inventory_units.where(variant_id: subscription.variant.id).first.shipment.shipping_method.id
 
       order.shipments.each do |shipment|
