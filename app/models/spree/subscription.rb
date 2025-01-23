@@ -137,13 +137,8 @@ module Spree
     private
 
     def create_combined_order(subscriptions)
-      p 'order subscriptions'
-      p subscriptions.first.parent_order
       customer = subscriptions.first.parent_order.user
       email = subscriptions.first.parent_order.email
-
-      p 'customer'
-      p customer
 
       order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
       is_new = false
@@ -155,11 +150,15 @@ module Spree
       if order.count > 0
         if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
           new_order = order.last.order
+
+          p 'new_order si'
+          p new_order
         else
           new_order = orders.create(order_attributes(customer))
-          p 'new_order'
-          p new_order
           is_new = true
+
+          p 'new_order no'
+          p new_order
         end
       else
         new_order = orders.create(order_attributes(customer))
