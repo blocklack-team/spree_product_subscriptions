@@ -148,25 +148,16 @@ module Spree
       end
 
       if order.count > 0
-        if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
+        if order.last.order.state != 'complete' && order.last.order.state != 'payment_confirm'
           new_order = order.last.order
-
-          p 'new_order si'
-          p new_order
         else
           new_order = orders.create(order_attributes(customer))
           is_new = true
-
-          p 'new_order no'
-          p new_order
         end
       else
         new_order = orders.create(order_attributes(customer))
         is_new = true
       end
-
-      p 'is_new'
-      p is_new
     
       if is_new
         add_variant_to_order(new_order, subscriptions.first)
