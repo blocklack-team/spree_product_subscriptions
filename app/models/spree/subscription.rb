@@ -81,8 +81,7 @@ module Spree
       #if deliveries_remaining? && next_occurrence_possible
       if next_occurrence_possible
         subscription = self.class.eligible_for_subscription
-        p subscription
-        #create_combined_order(subscription)
+        create_combined_order(subscription)
       end
 
       update(next_occurrence_at: next_occurrence_at_value) if deliveries_remaining?
@@ -141,8 +140,14 @@ module Spree
       customer = subscriptions.first.parent_order.user
       email = subscriptions.first.parent_order.email
 
+      p 'subscriptions.first.id'
+      p subscriptions.first.id
+
       order = Spree::OrderSubscription.where(subscription_id: subscriptions.first.id)
       is_new = false
+
+      p 'order subscription'
+      p order
 
       if order.count > 0
         if order.last.order.state != 'complete' || order.last.order.state != 'payment_confirm'
@@ -155,6 +160,9 @@ module Spree
         new_order = orders.create(order_attributes(customer))
         is_new = true
       end
+
+      p 'is new var'
+      p is_new
     
       if is_new
         add_variant_to_order(new_order, subscriptions.first)
