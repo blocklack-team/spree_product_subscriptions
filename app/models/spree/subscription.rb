@@ -78,9 +78,11 @@ module Spree
         update_column(:next_occurrence_possible, false)
       end
 
-      if deliveries_remaining? && next_occurrence_possible
+      #if deliveries_remaining? && next_occurrence_possible
+      if next_occurrence_possible
         subscription = self.class.eligible_for_subscription
-        create_combined_order(subscription)
+        p subscription
+        #create_combined_order(subscription)
       end
 
       update(next_occurrence_at: next_occurrence_at_value) if deliveries_remaining?
