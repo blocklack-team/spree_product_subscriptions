@@ -157,6 +157,8 @@ module Spree
           new_order = order.last.order
         else
           new_order = orders.create(order_attributes(customer))
+          p 'new_order'
+          p new_order
           is_new = true
         end
       else
@@ -164,10 +166,8 @@ module Spree
         is_new = true
       end
 
-      p 'parent_order'
-      p order_attributes(customer)
+      p 'is_new'
       p is_new
-      p parent_order
     
       if is_new
         add_variant_to_order(new_order, subscriptions.first)
@@ -308,7 +308,7 @@ module Spree
         token: parent_order.token,
         store: parent_order.store,
         user: customer,
-        created_by: parent_order.user,
+        created_by: customer,
         last_ip_address: parent_order.last_ip_address
       }
     end
