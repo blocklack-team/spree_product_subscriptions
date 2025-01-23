@@ -163,6 +163,11 @@ module Spree
         new_order = orders.create(order_attributes(customer))
         is_new = true
       end
+
+      p 'parent_order'
+      p order_attributes(customer)
+      p is_new
+      p parent_order
     
       if is_new
         add_variant_to_order(new_order, subscriptions.first)
