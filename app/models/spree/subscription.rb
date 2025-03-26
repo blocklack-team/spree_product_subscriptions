@@ -69,7 +69,7 @@ module Spree
     before_update :next_occurrence_at_not_changed?, if: :paused?
     after_update :notify_user, if: :user_notifiable?
     after_update :notify_cancellation, if: :cancellation_notifiable?
-    after_update :update_next_occurrence_at
+    #after_update :update_next_occurrence_at
 
     def process
       if (variant.stock_items.sum(:count_on_hand) >= quantity || variant.stock_items.any? { |stock| stock.backorderable? }) && (!variant.product.discontinued?)
